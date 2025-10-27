@@ -42,4 +42,4 @@ history = model.fit(
 prediction_model = Model(inputs=input_data, outputs=x)
 prediction_model.save('model.h5')
 
-print(32)
+print(3)
