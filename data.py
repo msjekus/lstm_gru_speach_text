@@ -65,45 +65,6 @@ def optimal_length_df(data_path: str, df: DataFrame, num_features: int):
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=num_features).T
         lengths.append(len(mfcc))
     return int(np.max(lengths))
-
-def extract_features(path:str, num_features: int, input_length:int):
-    y,sr = librosa.load(path, sr=16000)
-    mfcc=librosa.feature.mfcc(y=y, sr=sr, n_mfcc=num_features).T
-    if len(mfcc)<input_length:
-        mfcc = np.pad(mfcc, ((0, input_length-len(mfcc)),(0,0)),mode="constant")
-    else:
-        mfcc=mfcc[:input_length, :]
-    return mfcc
-
-def encode_text(text:str,char2idx:dict):
-    text=text.lower().strip()
-    return [char2idx[c] for c in text if c in char2idx]
-
-def fill_data(data_path: str, df:DataFrame, num_features: int, input_length, char2idx: dict):
-    X, Y, input_lengths, label_lengths = [] ,[], [], []
-    for i, row in tqdm(df.iterrows(), total=len(df)):
-        file_path = os.path.join(data_path, row.path)
-        if not os.path.exists(file_path):
-            continue
-        mfcc=extract_features(file_path, num_features, input_length)
-        label = encode_text(row.sentence, char2idx)
-        if len(label) == 0:
-            continue
-        X.append(mfcc)
-        Y.append(label)
-        input_lengths.append(len(mfcc))
-        label_lengths.append(len(label))
-    #Вирівнювання
-    max_input_len = np.max(input_lengths)
-    max_label_len = np.max(label_lengths)
-    Y_padded = np.zeros((len(Y), max_label_len))
-    for i in range(len(Y)):
-        Y_padded[i, :len(Y[i])]= Y[i]
-    X = np.array(X)
-    input_lengths = np.array(input_lengths)
-    label_lengths = np.array(label_lengths)
-    return X, Y, Y_padded, input_lengths, label_lengths
-
 #################
 # Шляхи до файлів
 TSV_PATH = "content/uk/validated.tsv"
@@ -120,9 +81,7 @@ alphabet, char2idx, idx2char, num_classes = load_symbols(load_tsv_full(TSV_PATH)
 # input_length = optimal_length(DATA_PATH, EXAMPLE_COUNT, NUM_FEATURES)
 input_length = optimal_length_df(DATA_PATH, DF, NUM_FEATURES)
 print(f"Input length ={input_length}")
-X, Y, Y_padded, input_lengths, label_lengths = fill_data(
-    DATA_PATH, DF, NUM_FEATURES, input_length, char2idx)
-print(X, Y, Y_padded, input_lengths, label_lengths)
+
 
 
 
