@@ -43,44 +43,28 @@ def load_symbols(df:DataFrame):
     num_classes = len(alphabet) + 1 #Symbol count
     return alphabet, char2idx, idx2char, num_classes
 
-def optimal_length(data_path: str,example_count: int, num_features: int):
-    files = glob.glob(os.path.join(data_path, "*.mp3"))
-    samples = random.sample(files, min(example_count, len(files)))
-    lengths = []
-    for path in samples:
-        y, sr = librosa.load(path, sr =16000)
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=num_features).T
-        lengths.append(len(mfcc))
-    print(f"n={len(lengths)}")
-    percen = np.percentile(lengths, [50, 75, 90, 95, 99, 100])
-    print(f"Percentile ={percen}")
-    return  int(max(percen))
+# def optimal_length(data_path: str,example_count: int, num_features: int):
+#     files = glob.glob(os.path.join(data_path, "*.mp3"))
+#     samples = random.sample(files, min(example_count, len(files)))
+#     lengths = []
+#     for path in samples:
+#         y, sr = librosa.load(path, sr =16000)
+#         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=num_features).T
+#         lengths.append(len(mfcc))
+#     print(f"n={len(lengths)}")
+#     percen = np.percentile(lengths, [50, 75, 90, 95, 99, 100])
+#     print(f"Percentile ={percen}")
+#     return  int(max(percen))
 
 #Домашнє Завдання
-# def optimal_length_df(data_path: str, df: DataFrame, num_features: int):
-#     lengths = []
-#     for filename in df['path']:
-#         file_path = os.path.join(data_path, filename)
-#         if os.path.exists(file_path):
-#             audio, sr = librosa.load(file_path, sr=1600)
-#             mfcc=librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=num_features)
-#             lengths.append(mfcc.shape[1])
-#     if not lengths:
-#         return 0
-#
-#     return int(np.max(lengths))
-
-# def optimal_length_df(data_path: str, df: DataFrame, num_features: int):
-#     # files = glob.glob(os.path.join(data_path, "*.mp3"))
-#     # samples = random.sample(files, min(example_count, len(files)))
-#
-#     lengths = []
-#     files = [os.path.join(data_path, p) for p in df["path"] if p.endswith(".mp3")]
-#     for path in files:
-#         y,sr=librosa.load(path, sr=16000)
-#         mfcc=librosa.feature.mfcc(y=y, sr=sr,n_mfcc=num_features).T
-#         lengths.append(len(mfcc))
-#     return int(max(lengths))
+def optimal_length_df(data_path: str, df: DataFrame, num_features: int):
+    files = [os.path.join(data_path, f) for f in df.path.values]
+    lengths = []
+    for path in files:
+        y, sr =librosa.load(path, sr=16000)
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=num_features).T
+        lengths.append(len(mfcc))
+    return int(np.max(lengths))
 
 def extract_features(path:str, num_features: int, input_length:int):
     y,sr = librosa.load(path, sr=16000)
@@ -133,7 +117,8 @@ DF = load_tsv(TSV_PATH, EXAMPLE_COUNT)
 alphabet, char2idx, idx2char, num_classes = load_symbols(load_tsv_full(TSV_PATH))
 # print(alphabet)
 # print(char2idx)
-input_length = optimal_length(DATA_PATH, EXAMPLE_COUNT, NUM_FEATURES)
+# input_length = optimal_length(DATA_PATH, EXAMPLE_COUNT, NUM_FEATURES)
+input_length = optimal_length_df(DATA_PATH, DF, NUM_FEATURES)
 print(f"Input length ={input_length}")
 X, Y, Y_padded, input_lengths, label_lengths = fill_data(
     DATA_PATH, DF, NUM_FEATURES, input_length, char2idx)
