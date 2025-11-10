@@ -5,11 +5,20 @@ import pandas as pd
 from numpy.random import sample
 from pandas import DataFrame
 import glob
+
+from tensorflow.keras.models import load_model
 from tqdm import tqdm
 import librosa
 from librosa.util import example_info
 
 #Обробка аудіо і текстів
+
+symbols = "абвгдежзийклмнопрстуфхчцшщьюяєіїґ'- "
+
+def clean_text(text:str):
+    text=text.lower()
+    cleaned_text = ''.join([ch for ch in text if ch in symbols])
+    return cleaned_text
 
 # def load_tsv(tsv_path:str, data_path:str, example_count:int):
 def load_tsv(tsv_path:str, example_count:int):
@@ -104,6 +113,22 @@ def fill_data(data_path: str, df:DataFrame, num_features: int, input_length, cha
     label_lengths = np.array(label_lengths)
     return X, Y, Y_padded, input_lengths, label_lengths
 
+def decode_prediction(pred, idx2char):
+    text = ""
+    prev = -1
+    for p in pred:
+        idx = np.argmax(p)
+        if idx != prev and idx != 0:
+            text += idx2char[idx]
+        prev = idx
+    return text
+
+def recognize_audio(path, model, num_features, input_length, idx2char):
+    mfcc = extract_features(path, num_features, input_length)
+    mfcc = np.expand_dims(mfcc, axis=0)
+    pred = model.predict(mfcc)[0]
+    return decode_prediction(pred, idx2char)
+
 #################
 # Шляхи до файлів
 TSV_PATH = "content/uk/validated.tsv"
@@ -123,21 +148,12 @@ print(f"Input length ={input_length}")
 X, Y, Y_padded, input_lengths, label_lengths = fill_data(
     DATA_PATH, DF, NUM_FEATURES, input_length, char2idx)
 print(X, Y, Y_padded, input_lengths, label_lengths)
+print("X shape:", X.shape)
 
+model = load_model("model.h5", compile=False)
 
+test_file = os.path.join(DATA_PATH, DF.path.values[0])
+recognized = recognize_audio(test_file, model, NUM_FEATURES, input_length, idx2char)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print(f"Original: {clean_text(DF.sentence.values[0])}")
+print(f"Recognized: {recognized}")
