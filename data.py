@@ -1,4 +1,5 @@
 import os
+import re
 import random
 import  numpy as np
 import pandas as pd
@@ -11,6 +12,38 @@ from tqdm import tqdm
 import librosa
 from librosa.util import example_info
 
+# def clean_text(text: str) -> str:
+#     # joki Linux Сі ХIХ
+#     import re
+#     text = text.lower()
+#     # Залишити тільки букви, апостроф і пробіли
+#     # text = re.sub(r"[^а-щьюяґєіїa-z0-9'՚`’\-\s]", "", text)
+#     # Видалити символи
+#     text = re.sub(r"[,.!?:;_́«»“”„…\"]", "", text)
+#     text = re.sub(r"[`՚’]", "'", text)
+#     text = re.sub(r"[–—−‒]", "-", text)
+#     text = re.sub(r"\s-\s", " ", text)
+#     text = re.sub(r"-\s", " ", text)
+#     text = re.sub(r"\s-", " ", text)
+#     text = re.sub(r"joki", "йокі", text)
+#     text = re.sub(r"linux", "лінукс", text)
+#     text = re.sub(r"ci", "сі", text)
+#     text = re.sub(r"xix", "дев’ятнадцяте", text)
+#     #
+#     text = re.sub(r"a", "а", text)
+#     text = re.sub(r"c", "с", text)
+#     text = re.sub(r"e", "е", text)
+#     text = re.sub(r"i", "і", text)
+#     text = re.sub(r"m", "м", text)
+#     text = re.sub(r"o", "о", text)
+#     text = re.sub(r"p", "р", text)
+#     text = re.sub(r"x", "х", text)
+#     text = re.sub(r"y", "у", text)
+#     text = re.sub(r"ы", "и", text)
+#     # Прибрати зайві пробіли
+#     text = re.sub(r"\s+", " ", text).strip()
+#     return text
+
 #Обробка аудіо і текстів
 
 symbols = "абвгдежзийклмнопрстуфхчцшщьюяєіїґ'- "
@@ -18,12 +51,21 @@ symbols = "абвгдежзийклмнопрстуфхчцшщьюяєіїґ'- 
 def clean_text(text:str):
     text=text.lower()
     cleaned_text = ''.join([ch for ch in text if ch in symbols])
+    cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
     return cleaned_text
 
 # def load_tsv(tsv_path:str, data_path:str, example_count:int):
 def load_tsv(tsv_path:str, example_count:int):
     # Читання TSV в DataFrame
-    df= pd.read_csv(tsv_path, sep='\t')
+    # df= pd.read_csv(tsv_path, sep='\t')
+    df = pd.read_csv(
+        tsv_path,
+        sep='\t',
+        engine='python',
+        quoting=3,
+    )
+    for line in df.sentence:
+        print(line)
     # перевірка, чи всі аудіо файли існують
     # df["exists"]=df["path"].apply(lambda p: os.path.exists(os.path.join(data_path, p)))
     # missing=df[~df["exists"]]
@@ -35,10 +77,17 @@ def load_tsv(tsv_path:str, example_count:int):
     # print(f"Exists file: {df["exists"].sum()}")
     # print(f"Missing files: {len(missing)}")
     # Повернення функції
+
+    df["sentence"]=df["sentence"].apply(clean_text)
     return df
 
 def load_tsv_full(tsv_path:str):
-    df = pd.read_csv(tsv_path, sep='\t')
+    df = pd.read_csv(
+        tsv_path,
+        sep='\t',
+        engine='python',
+        quoting=3,
+    )
     return df
 def load_symbols(df:DataFrame):
     unique_symbols = set()
@@ -147,6 +196,13 @@ input_length = optimal_length_df(DATA_PATH, DF, NUM_FEATURES)
 print(f"Input length ={input_length}")
 X, Y, Y_padded, input_lengths, label_lengths = fill_data(
     DATA_PATH, DF, NUM_FEATURES, input_length, char2idx)
+np.savez(
+    "X_Y_padded_input_lengths_label_lengths.npz",
+    X=X,
+    Y_padded=Y_padded,
+    input_lengths=input_lengths,
+    label_lengths=label_lengths
+)
 print(X, Y, Y_padded, input_lengths, label_lengths)
 print("X shape:", X.shape)
 
